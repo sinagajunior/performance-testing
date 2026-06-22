@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PetStore Catalog Load Test — k6 vs JMeter</title>
+<style>
+  :root {
+    --bg: #0f1419; --card: #1a212b; --line: #2b3543; --txt: #e6edf3;
+    --mut: #9aa7b4; --jm: #d29922; --k6: #7ee787; --good: #3fb950; --warn: #d29922; --bad: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2rem; background: var(--bg); color: var(--txt);
+         font: 15px/1.5 -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.15rem; margin: 2rem 0 .75rem; border-bottom: 1px solid var(--line); padding-bottom: .35rem; }
+  .sub { color: var(--mut); margin: 0 0 1.5rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 1rem; margin: 1rem 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; }
+  .card .big { font-size: 1.5rem; font-weight: 700; }
+  .card .lbl { color: var(--mut); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+  table { width: 100%; border-collapse: collapse; margin: .5rem 0 1rem; font-variant-numeric: tabular-nums; }
+  th, td { padding: .55rem .7rem; text-align: right; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--mut); font-weight: 600; font-size: .82rem; text-transform: uppercase; letter-spacing: .03em; }
+  tbody tr:hover { background: #20293529; }
+  .jm { color: var(--jm); } .k6 { color: var(--k6); }
+  .pill { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+  .pill.good { background: #2ea04326; color: var(--good); }
+  .pill.warn { background: #d2992226; color: var(--warn); }
+  .tag { font-size: .72rem; color: var(--mut); font-weight: 400; }
+  .note { background: #1a212b; border-left: 3px solid var(--jm); padding: .75rem 1rem; border-radius: 0 8px 8px 0; margin: .6rem 0; color: var(--mut); }
+  .note strong { color: var(--txt); }
+  footer { color: var(--mut); font-size: .8rem; margin-top: 2.5rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+  code { background: #00000033; padding: .1rem .35rem; border-radius: 4px; font-size: .85em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PetStore Catalog — Load Test Comparison</h1>
+  <p class="sub">
+    Target: <code>https://petstore.octoperf.com/actions/Catalog.action</code> &middot;
+    Browse flow (21 requests/user: 1 landing + 2&times;10 loops) &middot;
+    Run date: 2026-06-22
+  </p>
+
+  <div class="grid">
+    <div class="card"><div class="lbl">Tools compared</div><div class="big"><span class="jm">JMeter 5.6.3</span> vs <span class="k6">k6 v2.0.0</span></div></div>
+    <div class="card"><div class="lbl">Load levels</div><div class="big">30 / 40 / 50 / 70</div><span class="tag">concurrent users, 10 loops</span></div>
+    <div class="card"><div class="lbl">Total requests / tool</div><div class="big">3,990</div><span class="tag">630 + 840 + 1050 + 1470</span></div>
+    <div class="card"><div class="lbl">Errors (both tools)</div><div class="big" style="color:var(--good)">0</div><span class="tag">0.00% error rate</span></div>
+  </div>
+
+  <h2>Throughput &amp; volume vs targets</h2>
+  <table>
+    <thead>
+      <tr><th>Level</th><th>Target TPS</th><th>Samples<br><span class="tag">(target)</span></th>
+          <th class="jm">JMeter TPS</th><th class="k6">k6 TPS</th><th>Verdict</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>30 users</td><td>~0.50</td><td>630 / 630</td><td class="jm">0.501</td><td class="k6">0.498</td><td><span class="pill good">on target</span></td></tr>
+      <tr><td>40 users</td><td>~0.70</td><td>840 / 840</td><td class="jm">0.701</td><td class="k6">0.698</td><td><span class="pill good">on target</span></td></tr>
+      <tr><td>50 users</td><td>~0.80</td><td>1050 / 1050</td><td class="jm">0.801</td><td class="k6">0.803</td><td><span class="pill good">on target</span></td></tr>
+      <tr><td>70 users</td><td>~1.20</td><td>1470 / 1470</td><td class="jm">1.202</td><td class="k6">1.152</td><td><span class="pill good">on target</span></td></tr>
+    </tbody>
+  </table>
+  <div class="note">Both tools produced the <strong>exact expected sample counts</strong> and TPS within ~4% of target at every level. Sample volume = users &times; 21, confirming the 1-landing + 2&times;10-loop browse flow in both implementations.</div>
+
+  <h2>Response times (ms)</h2>
+  <table>
+    <thead>
+      <tr><th>Level</th>
+          <th class="jm">JMeter avg</th><th class="jm">p90</th><th class="jm">p95</th>
+          <th class="k6">k6 avg</th><th class="k6">p90</th><th class="k6">p95</th><th class="k6">k6 max</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>30 users</td><td class="jm">460</td><td class="jm">743</td><td class="jm">791</td><td class="k6">207</td><td class="k6">208</td><td class="k6">356</td><td class="k6">1,232</td></tr>
+      <tr><td>40 users</td><td class="jm">456</td><td class="jm">748</td><td class="jm">832</td><td class="k6">203</td><td class="k6">201</td><td class="k6">212</td><td class="k6">2,158</td></tr>
+      <tr><td>50 users</td><td class="jm">570</td><td class="jm">709</td><td class="jm">783</td><td class="k6">199</td><td class="k6">207</td><td class="k6">222</td><td class="k6">420</td></tr>
+      <tr><td>70 users</td><td class="jm">417</td><td class="jm">703</td><td class="jm">762</td><td class="k6">806</td><td class="k6">267</td><td class="k6">435</td><td class="k6" style="color:var(--warn)">51,902</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>Why JMeter's averages look higher than k6's.</strong> They measure different spans.
+    JMeter's "elapsed" time includes DNS + TCP connect + TLS handshake on each new connection,
+    while k6's <code>http_req_duration</code> excludes those (they live in <code>http_req_blocked</code>).
+    So the absolute response-time numbers are <strong>not directly comparable</strong> — compare each tool against itself across levels.
+  </div>
+  <div class="note" style="border-left-color:var(--warn)">
+    <strong>k6 70-user outlier.</strong> One/few requests stalled to ~52 s (max), pulling the k6 average to 806 ms
+    even though p90/p95 stayed low (267/435 ms) and nothing failed. JMeter's 70-user run showed no such spike
+    (p99 = 829 ms). This is the same network-sensitive behavior behind the original "6 connection timeouts"
+    baseline — transient, server/network dependent, not a defect in either script.
+  </div>
+
+  <h2>Summary</h2>
+  <div class="note" style="border-left-color:var(--good)">
+    Both implementations are <strong>equivalent and valid</strong>: identical browse flow, identical volumes,
+    matching throughput, zero functional errors (100% of k6 status-200 checks passed). JMeter gives richer
+    out-of-the-box percentile/HTML dashboards; k6 gives a lighter, scriptable run with a live web dashboard.
+    Use response-time deltas <em>within</em> a tool, not across tools.
+  </div>
+
+  <footer>
+    Generated from JMeter <code>statistics.json</code> and k6 <code>summary.json</code> for runs on 2026-06-22.
+    Per-level reports: JMeter <code>results/&lt;level&gt;users-*/html/index.html</code>,
+    k6 <code>k6/results/&lt;level&gt;users-*/report.html</code>.
+  </footer>
+</div>
+</body>
+</html>

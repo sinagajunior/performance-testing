@@ -22,3 +22,13 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# JMeter run output (keep folder, ignore generated results)
+
+!/results/.gitkeep
+
+
+# k6 run output (keep folder, ignore generated results)
+
+!/k6/results/.gitkeep
+./claude
